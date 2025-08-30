@@ -11,7 +11,7 @@ import RedactionOptions from "@/components/RedactionOptions";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 
-import { uploadRedaction } from "@/api/api";
+import { processRedaction } from "@/api/api";
 import { useRedaction } from "@/contexts/RedactionContext";
 import type { MediaItem, RedactionClass } from "@/types/types";
 
@@ -23,6 +23,8 @@ export default function HomeScreen() {
   );
   const [uploading, setUploading] = useState(false);
   const { setRedacted } = useRedaction();
+  const [processedCount, setProcessedCount] = useState(0);
+  const [processingTotal, setProcessingTotal] = useState(0);
 
   const handleUpload = async () => {
     if (selectedItems.length === 0) {
@@ -34,16 +36,32 @@ export default function HomeScreen() {
     }
     try {
       setUploading(true);
-      // mock: does set response yet
-      await uploadRedaction({
-        classes: redactionClasses,
-        media: selectedItems,
-      });
-      // mock: store media that was uploaded
-      setRedacted({ media: selectedItems, classes: redactionClasses });
-      Alert.alert("Upload queued", "Your media has been submitted for redaction.");
+      setProcessedCount(0);
+      setProcessingTotal(selectedItems.length);
+      // per media processing
+      const outputs: MediaItem[] = [];
+      for (let i = 0; i < selectedItems.length; i++) {
+        const item = selectedItems[i];
+        const processed = await processRedaction({
+          classes: redactionClasses,
+          media: item,
+        });
+        outputs.push(processed ?? item);
+
+        // Update results incrementally so the carousel can show items as they finish
+        setRedacted({ media: [...outputs], classes: redactionClasses });
+        setProcessedCount(i + 1);
+      }
+      setRedacted({ media: outputs, classes: redactionClasses });
+      Alert.alert(
+        "Processing complete",
+        "All media have been submitted and processed."
+      );
     } catch (e: any) {
-      Alert.alert("Upload error", e?.message ?? "Something went wrong.");
+      Alert.alert(
+        "Processing interrupted",
+        e?.message ?? "One or more items failed."
+      );
     } finally {
       setUploading(false);
     }
@@ -93,10 +111,10 @@ export default function HomeScreen() {
 
         <ThemedView style={styles.stepContainer}>
           <ThemedText type="subtitle">
-            Step 3: Select properties to redact
+            Step 3: Select properties you want to omit from redaction
           </ThemedText>
           <ThemedText>
-            Tick the checkboxes of the properties you want to redact from your
+            Tick the checkboxes of the properties you do not want to redact from your
             media.
           </ThemedText>
           <RedactionOptions
@@ -113,6 +131,11 @@ export default function HomeScreen() {
             Tap the button below to begin the redaction process. This may take a
             few moments.
           </ThemedText>
+          {uploading && (
+            <ThemedText>
+              Processed {processedCount}/{processingTotal}
+            </ThemedText>
+          )}
           <Pressable
             onPress={handleUpload}
             disabled={uploading}

@@ -1,66 +1,126 @@
-import type { MediaItem } from "@/types/types";
+import type { MediaItem, ProcessRedactionParams } from "@/types/types";
+import * as FileSystem from "expo-file-system";
+import { Platform } from "react-native";
 
-export type UploadRedactionParams = {
-  classes: number[];
-  media: MediaItem[];
-  endpoint?: string;
-};
+const baseUrl =
+  (process.env.EXPO_PUBLIC_API_URL as string | undefined) ??
+  "http://localhost:3000/blur";
 
-function guessFileName(uri: string, isImage: boolean, index: number) {
-  const ext = uri.split("?")[0].split("#")[0].split(".").pop()?.toLowerCase();
-  const safeExt = ext && ext.length <= 5 ? ext : isImage ? "jpg" : "mp4";
-  return `file_${index}.${safeExt}`;
+function simpleMime(kind: "image" | "video") {
+  return kind === "image" ? "image/jpeg" : "video/mp4";
 }
 
-function guessMime(uri: string, isImage: boolean) {
-  const ext = uri.split("?")[0].split("#")[0].split(".").pop()?.toLowerCase();
-  if (isImage) {
-    if (ext === "png") return "image/png";
-    if (ext === "webp") return "image/webp";
-    return "image/jpeg";
+function fallbackExtFromContentType(ct: string, kind: "image" | "video") {
+  if (ct.startsWith("image/")) return (ct.split("/")[1] || "jpg").split(";")[0];
+  if (ct.startsWith("video/")) return (ct.split("/")[1] || "mp4").split(";")[0];
+  return kind === "image" ? "jpg" : "mp4";
+}
+
+const b64chars =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+function toBase64(bytes: Uint8Array) {
+  let out = "";
+  let i = 0;
+  for (; i + 2 < bytes.length; i += 3) {
+    const n = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2];
+    out +=
+      b64chars[(n >> 18) & 63] +
+      b64chars[(n >> 12) & 63] +
+      b64chars[(n >> 6) & 63] +
+      b64chars[n & 63];
   }
-  if (ext === "mov") return "video/quicktime";
-  if (ext === "mkv") return "video/x-matroska";
-  return "video/mp4";
+  if (i < bytes.length) {
+    const rem = bytes.length - i;
+    const n = (bytes[i] << 16) | (rem === 2 ? bytes[i + 1] << 8 : 0);
+    out += b64chars[(n >> 18) & 63];
+    out += b64chars[(n >> 12) & 63];
+    out += rem === 2 ? b64chars[(n >> 6) & 63] : "=";
+    out += "=";
+  }
+  return out;
 }
 
-export async function uploadRedaction({
+export async function processRedaction({
   classes,
   media,
-  endpoint,
-}: UploadRedactionParams) {
-  // Mock: simulate latency and return the same payload
-  await new Promise((r) => setTimeout(r, 500));
-  return { status: "ok", mocked: true, classes, media };
-  // const url = endpoint ?? "https://example.com/api/redact";
-  // const form = new FormData();
-  // form.append("classes", JSON.stringify(classes));
+}: ProcessRedactionParams): Promise<MediaItem | null> {
+  const formData = new FormData();
+  const name = media.type === "image" ? "upload.jpg" : "upload.mp4";
+  const mime = simpleMime(media.type);
 
-  // media.forEach((item, idx) => {
-  //   const isImage = item.type === "image";
-  //   const name = guessFileName(item.uri, isImage, idx);
-  //   const type = guessMime(item.uri, isImage);
-  //   form.append("files", { uri: item.uri, name, type } as any);
-  // });
+  // Backend expects a single 'file' field
+  formData.append("file", { uri: media.uri, name, type: mime } as any);
+  formData.append("filters", (classes ?? []).join(","));
 
-  // const res = await fetch(url, {
-  //   method: "POST",
-  //   headers: {
-  //     Accept: "application/json",
-  //     // Let fetch set the multipart boundary header
-  //   },
-  //   body: form,
-  // });
+  try {
+    const started = Date.now();
+    console.log("[processRedaction] POST", baseUrl, {
+      mediaType: media.type,
+      mediaUri: media.uri,
+      filters: (classes ?? []).join(","),
+      platform: Platform.OS,
+    });
 
-  // if (!res.ok) {
-  //   const text = await res.text().catch(() => "");
-  //   throw new Error(`Upload failed (${res.status}): ${text || res.statusText}`);
-  // }
+    const response = await fetch(baseUrl, {
+      method: "POST",
+      body: formData,
+      // Let fetch set Content-Type boundary automatically
+    });
 
-  // // Try json, fall back to text
-  // try {
-  //   return await res.json();
-  // } catch {
-  //   return await res.text();
-  // }
+    const duration = Date.now() - started;
+    const ct = response.headers.get("content-type") || "";
+    console.log("[processRedaction] Response", {
+      status: response.status,
+      ok: response.ok,
+      durationMs: duration,
+      contentType: ct,
+    });
+
+    if (!response.ok) {
+      try {
+        const data = await response.json();
+        console.error("[processRedaction] Error body (json)", data);
+      } catch {
+        try {
+          const text = await response.text();
+          console.error("[processRedaction] Error body (text)", text?.slice(0, 500));
+        } catch {}
+      }
+      return null;
+    }
+
+    const kind: "image" | "video" = ct.startsWith("video/")
+      ? "video"
+      : ct.startsWith("image/")
+      ? "image"
+      : media.type;
+
+    if (Platform.OS === "web") {
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      console.log("[processRedaction] Created object URL", objectUrl);
+      return { uri: objectUrl, type: kind };
+    }
+
+    // Native: save binary to a temp file as base64
+    const ab = await response.arrayBuffer();
+    const base64 = toBase64(new Uint8Array(ab));
+    const fileExt = fallbackExtFromContentType(ct, kind);
+    const dest = `${
+      FileSystem.cacheDirectory
+    }redacted-${Date.now()}.${fileExt}`;
+    await FileSystem.writeAsStringAsync(dest, base64, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    console.log("[processRedaction] Saved file", { dest, kind, fileExt });
+    return { uri: dest, type: kind };
+  } catch (error) {
+    console.error("[processRedaction] Unexpected failure", {
+      error,
+      endpoint: baseUrl,
+      mediaType: media.type,
+      platform: Platform.OS,
+    });
+    return null;
+  }
 }

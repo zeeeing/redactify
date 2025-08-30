@@ -4,3 +4,9 @@ export type MediaItem = {
 };
 
 export type RedactionClass = 0 | 1 | 2 | 3;
+
+export type ProcessRedactionParams = {
+  classes: number[];
+  media: MediaItem;
+  endpoint?: string;
+};
