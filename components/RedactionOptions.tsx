@@ -3,7 +3,8 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { ThemedText } from "@/components/ThemedText";
-import { REDACTION_ITEMS, RedactionClass } from "@/constants/constants";
+import { REDACTION_ITEMS } from "@/constants/constants";
+import type { RedactionClass } from "@/types/types";
 
 type Props = {
   value?: RedactionClass[];

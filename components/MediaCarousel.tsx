@@ -1,9 +1,9 @@
 import React, { useCallback, useMemo, useRef, useState } from "react";
-import { View, FlatList, StyleSheet, LayoutChangeEvent } from "react-native";
+import { FlatList, LayoutChangeEvent, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
 
-import { MediaItem } from "@/types/media";
 import PickedVideo from "@/components/PickedVideo";
+import { MediaItem } from "@/types/types";
 
 type Props = {
   items: MediaItem[];

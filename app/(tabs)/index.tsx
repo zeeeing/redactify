@@ -1,20 +1,53 @@
 import { Image } from "expo-image";
-import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { useState } from "react";
+import { Alert, Pressable, StyleSheet, View } from "react-native";
 
-import { HelloWave } from "@/components/HelloWave";
-import ParallaxScrollView from "@/components/ParallaxScrollView";
-import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
 import CameraModal from "@/components/CameraModal";
+import { HelloWave } from "@/components/HelloWave";
 import MediaActions from "@/components/MediaActions";
 import MediaCarousel from "@/components/MediaCarousel";
+import ParallaxScrollView from "@/components/ParallaxScrollView";
 import RedactionOptions from "@/components/RedactionOptions";
-import { MediaItem } from "@/types/media";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+
+import { uploadRedaction } from "@/api/api";
+import { useRedaction } from "@/contexts/RedactionContext";
+import type { MediaItem, RedactionClass } from "@/types/types";
 
 export default function HomeScreen() {
   const [selectedItems, setSelectedItems] = useState<MediaItem[]>([]);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [redactionClasses, setRedactionClasses] = useState<RedactionClass[]>(
+    []
+  );
+  const [uploading, setUploading] = useState(false);
+  const { setRedacted } = useRedaction();
+
+  const handleUpload = async () => {
+    if (selectedItems.length === 0) {
+      Alert.alert(
+        "No media selected",
+        "Please add at least one image or video."
+      );
+      return;
+    }
+    try {
+      setUploading(true);
+      // mock: does set response yet
+      await uploadRedaction({
+        classes: redactionClasses,
+        media: selectedItems,
+      });
+      // mock: store media that was uploaded
+      setRedacted({ media: selectedItems, classes: redactionClasses });
+      Alert.alert("Upload queued", "Your media has been submitted for redaction.");
+    } catch (e: any) {
+      Alert.alert("Upload error", e?.message ?? "Something went wrong.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <>
@@ -66,14 +99,32 @@ export default function HomeScreen() {
             Tick the checkboxes of the properties you want to redact from your
             media.
           </ThemedText>
-          <RedactionOptions />
+          <RedactionOptions
+            value={redactionClasses}
+            onChange={setRedactionClasses}
+          />
         </ThemedView>
 
         <ThemedView style={styles.stepContainer}>
-          <ThemedText type="subtitle">Step 4: Begin redaction</ThemedText>
-          <ThemedText>
-            Tap on upload to upload your media to a server to get it redacted.
+          <ThemedText type="subtitle">
+            Step 4: Begin redaction process
           </ThemedText>
+          <ThemedText>
+            Tap the button below to begin the redaction process. This may take a
+            few moments.
+          </ThemedText>
+          <Pressable
+            onPress={handleUpload}
+            disabled={uploading}
+            style={[
+              styles.actionButton,
+              { alignSelf: "flex-start", opacity: uploading ? 0.6 : 1 },
+            ]}
+          >
+            <ThemedText type="link">
+              {uploading ? "Uploading..." : "Begin Redaction"}
+            </ThemedText>
+          </Pressable>
         </ThemedView>
       </ParallaxScrollView>
       <CameraModal

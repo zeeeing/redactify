@@ -1,11 +1,3 @@
-import CameraControls from "@/components/CameraControls";
-import { Ionicons } from "@expo/vector-icons";
-import { MediaItem } from "@/types/media";
-import {
-  CameraView,
-  useCameraPermissions,
-  useMicrophonePermissions,
-} from "expo-camera";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -15,6 +7,15 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import {
+  CameraView,
+  useCameraPermissions,
+  useMicrophonePermissions,
+} from "expo-camera";
+
+import CameraControls from "@/components/CameraControls";
+import { MediaItem } from "@/types/types";
+import { Ionicons } from "@expo/vector-icons";
 
 type Props = {
   visible: boolean;

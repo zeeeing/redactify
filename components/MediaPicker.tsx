@@ -1,16 +1,16 @@
 import React, { useCallback } from "react";
 import {
+  Alert,
   Pressable,
   StyleSheet,
   View,
-  Alert,
   type StyleProp,
   type ViewStyle,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 
 import { ThemedText } from "@/components/ThemedText";
-import { MediaItem } from "@/types/media";
+import { MediaItem } from "@/types/types";
 
 type Props = {
   onPicked: (items: MediaItem[]) => void;

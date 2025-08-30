@@ -1,4 +1,4 @@
-export type RedactionClass = 0 | 1 | 2 | 3;
+import { RedactionClass } from "@/types/types";
 
 export const REDACTION_ITEMS: { id: RedactionClass; label: string }[] = [
   { id: 0, label: "Faces" },

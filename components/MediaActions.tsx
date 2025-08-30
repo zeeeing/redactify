@@ -1,8 +1,9 @@
 import React from "react";
 import { Platform, Pressable, StyleSheet, View } from "react-native";
-import { ThemedText } from "@/components/ThemedText";
+
 import MediaPicker from "@/components/MediaPicker";
-import { MediaItem } from "@/types/media";
+import { ThemedText } from "@/components/ThemedText";
+import { MediaItem } from "@/types/types";
 
 type Props = {
   onPicked: (items: MediaItem[]) => void;
@@ -10,14 +11,15 @@ type Props = {
   selectionLimit?: number;
 };
 
-export default function MediaActions({ onPicked, onOpenCamera, selectionLimit }: Props) {
+export default function MediaActions({
+  onPicked,
+  onOpenCamera,
+  selectionLimit,
+}: Props) {
   return (
     <View style={styles.row}>
       {Platform.OS !== "web" && (
-        <Pressable
-          onPress={onOpenCamera}
-          style={[styles.actionButton]}
-        >
+        <Pressable onPress={onOpenCamera} style={[styles.actionButton]}>
           <ThemedText type="link">Open Camera</ThemedText>
         </Pressable>
       )}
