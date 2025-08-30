@@ -1,50 +1,36 @@
-# Welcome to your Expo app 👋
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+# Redactify - an AI, privacy-centric assistant
+Redactify is a mobile application that aims to protect users' privacy in the materials posted online by performing redaction on areas of images/videos that potentially contain sensitive information such as Personal Identifiable Information (PII). Powered by Computer Vision Deep Learning models, it aims to position itself as as protective layer for TikTok users to filter out sensitive information before uploading a post onto the platform, keeping users safe from potential data leakages and threats revolving their PII.
 
-## Get started
+**Personal Identifiable Information (PII) is any data that can be used to identify a specific person, either directly or indirectly
 
-1. Install dependencies
+## Problem Statement
+This project was done as part of TechJam 2025, following the track: *7. Privacy Meets AI: Building a Safer Digital Future* (AI for Privacy).
 
-   ```bash
-   npm install
-   ```
+As AI technologies rapidly integrate into our daily lives, it is becoming increasingly important to be mindful of the things we post online which may compromise our privacy. 
 
-2. Start the app
+## Features
+- Option to capture image/video from phone camera or upload existing media from phone gallery.
+- Flexiblity of choosing the type of PII to filter before sending image/video for processing.
+- Output image/video is blurred, protecting the user from leaking their sensitive information online. 
+- Filters out PII including, but not limited to, faces, bar codes, credit cards, passwords, emails and zipcodes. 
 
-   ```bash
-   npx expo start
-   ```
+## Examples
+The following examples show the kinds of sensitive PII that are redacted from the user's input images:
+![redacted_images](redaction.png)
 
-In the output, you'll find options to open the app in a
+## User Flow
+1. In the app's homepage, user chooses between (a) upload and (b) capture.
+2. User performs the uploading/capturing of the image/video.
+3. User reviews image/video.
+4. User chooses types of sensitive information to redact from image/video by selecting from the dropdown menu.
+5. User confirms decision and presses the button to send.
+6. After a short moment, the resulting redacted image/video is rendered onto the screen, allowing the user to save the redacted image/video to their phone storage.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Tech Stack
+- Frontend: React Native with Expo
+- Backend: FastAPI
+- ML: OpenCV, HuggingFace
+- Libraries: [PP-OCR](https://github.com/PaddlePaddle/Paddle) (Text Detection & Text Recognition), [YOLOv11](https://docs.ultralytics.com/models/yolo11/) (Face, Bar Code, Credit Card detection)
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
